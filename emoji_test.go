@@ -40,7 +40,7 @@ func TestGetByUnicode(t *testing.T) {
 	emojer, err := New()
 	assert.NoError(t, err, "New method cannot return an error")
 
-	row, err := emojer.GetByUnicode("1F37A")
+	row, err := emojer.Get("ucode","1F37A")
 	assert.NoError(t, err, "GetByUnicode method cannot return an error")
 	assert.Equal(t, "🍺", row.Emoji)
 	assert.Equal(t, ":beer_mug:", row.Alias)
@@ -54,7 +54,7 @@ func TestGetByAlias(t *testing.T) {
 	emojer, err := New()
 	assert.NoError(t, err, "New method cannot return an error")
 
-	row, err := emojer.GetByAlias(":beer_mug:")
+	row, err := emojer.Get("alias",":beer_mug:")
 	assert.NoError(t, err, "GetByAlias method cannot return an error")
 	assert.Equal(t, "🍺", row.Emoji)
 	assert.Equal(t, "1F37A", row.Unicode)

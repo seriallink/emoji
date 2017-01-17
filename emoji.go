@@ -46,25 +46,13 @@ func (e *Emojer) Close() error {
 	return e.db.Close()
 }
 
-func (e *Emojer) GetByUnicode(ucode string) (row Row, err error) {
+func (e *Emojer) Get(bucket, key string) (row Row, err error) {
 
 	// open bucket
-	bucket := e.tx.Bucket([]byte("ucode"))
+	b := e.tx.Bucket([]byte(bucket))
 
 	// unmarshal emoji
-	err = json.Unmarshal(bucket.Get([]byte(ucode)),&row)
-
-	return
-
-}
-
-func (e *Emojer) GetByAlias(alias string) (row Row, err error) {
-
-	// open bucket
-	bucket := e.tx.Bucket([]byte("alias"))
-
-	// unmarshal emoji
-	err = json.Unmarshal(bucket.Get([]byte(alias)),&row)
+	err = json.Unmarshal(b.Get([]byte(key)),&row)
 
 	return
 
@@ -176,7 +164,7 @@ func (e *Emojer) Emojiless(emojiness string) (emojiless string, err error){
 
 func (e *Emojer) Emojiness(emojiless string) (string, error){
 
-	// copy emoji text
+	// validate text
 	if emojiless == "" {
 		return "", nil
 	}
@@ -193,7 +181,7 @@ func (e *Emojer) Emojiness(emojiless string) (string, error){
 	for _, match := range matches {
 
 		// get emoji by its alias
-		row, err := e.GetByAlias(match)
+		row, err := e.Get("alias",match)
 		if err != nil {
 			return "", err
 		}
