@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"unicode"
 	"github.com/boltdb/bolt"
 )
+const dbname = "emoji.db"
 
 type Emojer struct {
 	db *bolt.DB
@@ -30,8 +32,13 @@ type Replacer struct {
 
 func New() (e Emojer, err error) {
 
+	// check if db exists
+	if _, err := os.Stat(dbname); os.IsNotExist(err) {
+		Load(dbname)
+	}
+
 	// open db
-	if e.db, err = bolt.Open("emoji.db", 0600, nil); err == nil {
+	if e.db, err = bolt.Open(dbname, 0600, nil); err == nil {
 
 		// and create a read-only transaction
 		e.tx, err = e.db.Begin(false)

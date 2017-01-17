@@ -1,4 +1,4 @@
-package main
+package emoji
 
 import (
 	"bufio"
@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strings"
 	"github.com/boltdb/bolt"
-	"github.com/seriallink/emoji"
 )
 
 const dataUrl = "http://unicode.org/Public/emoji/5.0/emoji-test.txt"
@@ -26,10 +25,10 @@ func NoExtraSpaces(data string) string {
 	return rep
 }
 
-func main(){
+func Load(dbname string){
 
 	// open bolt db
-	db, err := bolt.Open("emoji.db", 0600, nil)
+	db, err := bolt.Open(dbname, 0600, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -82,7 +81,7 @@ func main(){
 		if line != "" && line[:1] != "#" {
 
 			// init row
-			row := &emoji.Row{}
+			row := &Row{}
 
 			// dismember emoji information
 			data := strings.Split(line,";")
