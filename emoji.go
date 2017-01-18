@@ -38,7 +38,7 @@ func New() (e Emojer, err error) {
 	}
 
 	// open db
-	if e.db, err = bolt.Open(dbname, 0600, nil); err == nil {
+	if e.db, err = bolt.Open(dbname, os.ModePerm, nil); err == nil {
 
 		// and create a read-only transaction
 		e.tx, err = e.db.Begin(false)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"github.com/boltdb/bolt"
@@ -28,7 +29,7 @@ func NoExtraSpaces(data string) string {
 func Load(dbname string){
 
 	// open bolt db
-	db, err := bolt.Open(dbname, 0600, nil)
+	db, err := bolt.Open(dbname, os.ModePerm, nil)
 	if err != nil {
 		panic(err)
 	}
