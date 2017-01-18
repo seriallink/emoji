@@ -7,14 +7,14 @@ import (
 
 func TestEmojiless(t *testing.T) {
 
-	emojitext := "It's a 😀 right here!"
+	emojitext := "🏈"
 
 	emojer, err := New()
 	assert.NoError(t, err, "New method cannot return an error")
 
 	emojiless, err := emojer.Emojiless(emojitext)
 	assert.NoError(t, err, "Emojiless method cannot return an error")
-	assert.Equal(t, "It's a :grinning_face: right here!", emojiless)
+	assert.Equal(t, ":american_football:", emojiless)
 
 	assert.NoError(t, emojer.Close(), "Close method cannot return an error")
 
@@ -23,6 +23,7 @@ func TestEmojiless(t *testing.T) {
 func TestEmojiness(t *testing.T) {
 
 	emojitext := "We are a :grinning_face: :family_man_woman_girl_girl:!"
+	emojifake := "this is :not_an_emoji:, :do_not: convert it!"
 
 	emojer, err := New()
 	assert.NoError(t, err, "New method cannot return an error")
@@ -30,6 +31,10 @@ func TestEmojiness(t *testing.T) {
 	emojiless, err := emojer.Emojiness(emojitext)
 	assert.NoError(t, err, "Emojiness method cannot return an error")
 	assert.Equal(t, "We are a 😀 👨‍👩‍👧‍👧!", emojiless)
+
+	emojiless, err = emojer.Emojiness(emojifake)
+	assert.NoError(t, err, "Emojiness method cannot return an error")
+	assert.Equal(t, emojifake, emojiless)
 
 	assert.NoError(t, emojer.Close(), "Close method cannot return an error")
 

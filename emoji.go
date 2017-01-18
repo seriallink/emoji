@@ -58,8 +58,13 @@ func (e *Emojer) Get(bucket, key string) (row Row, err error) {
 	// open bucket
 	b := e.tx.Bucket([]byte(bucket))
 
-	// unmarshal emoji
-	err = json.Unmarshal(b.Get([]byte(key)),&row)
+	// get value
+	if value := b.Get([]byte(key)); value != nil {
+
+		// unmarshal emoji
+		err = json.Unmarshal(value,&row)
+
+	}
 
 	return
 
@@ -193,8 +198,13 @@ func (e *Emojer) Emojiness(emojiless string) (string, error){
 			return "", err
 		}
 
-		// create replace pair
-		pairs = append(pairs, match, row.Emoji)
+		// is it a valid alias?
+		if row.Alias == match {
+
+			// create replace pair
+			pairs = append(pairs, match, row.Emoji)
+
+		}
 
 	}
 
