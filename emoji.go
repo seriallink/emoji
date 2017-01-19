@@ -7,9 +7,10 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"unicode"
+	"time"
 	"github.com/boltdb/bolt"
 )
+
 const dbname = "emoji.db"
 
 type Emojer struct {
@@ -32,17 +33,20 @@ type Replacer struct {
 
 func New() (e Emojer, err error) {
 
-	// check if db exists
+	// check if db file exists
 	if _, err := os.Stat(dbname); os.IsNotExist(err) {
 		Load(dbname)
 	}
 
-	// open db
-	if e.db, err = bolt.Open(dbname, os.ModePerm, nil); err == nil {
+	// open db in read-only mode
+	e.db, err = bolt.Open(dbname, os.ModePerm, &bolt.Options{
+		ReadOnly: true,
+		Timeout: time.Second,
+	})
 
-		// and create a read-only transaction
+	// and create a read-only transaction
+	if err == nil {
 		e.tx, err = e.db.Begin(false)
-
 	}
 
 	return
@@ -63,6 +67,30 @@ func (e *Emojer) Get(bucket, key string) (row Row, err error) {
 
 		// unmarshal emoji
 		err = json.Unmarshal(value,&row)
+
+	}
+
+	return
+
+}
+
+func (e *Emojer) All(bucket string) (rows []Row, err error) {
+
+	// open bucket cursor
+	cursor := e.tx.Bucket([]byte(bucket)).Cursor()
+
+	// iterate over rows
+	for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
+
+		// init row
+		row := Row{}
+
+		// unmarshal emoji
+		if err = json.Unmarshal(v,&row); err != nil {
+			return
+		}
+
+		rows = append(rows,row)
 
 	}
 
@@ -93,24 +121,19 @@ func (e *Emojer) Emojiless(emojiness string) (emojiless string, err error){
 	for i, c := range emojiness {
 
 		// check if rune is a possible emoji
-		if unicode.IsSymbol(c) || unicode.Is(unicode.Join_Control,c) {
+		if regexp.MustCompile("[^a-zA-Z ]").MatchString(string(c)) {
 
 			// append unicode value
-			criteria = append(criteria,fmt.Sprintf("%X",c))
+			criteria = append(criteria,fmt.Sprintf("%U",c)[2:])
 
 			// create prefix
 			prefix := []byte(strings.Join(criteria," "))
 
 			// search emoji
-			if key, value := cursor.Seek(prefix); key != nil && bytes.HasPrefix(key,prefix) {
+			if key, _ := cursor.Seek(prefix); key != nil && bytes.HasPrefix(key,prefix) {
 
-				// init emoji db row
-				row := &Row{}
-
-				// unmarshal value
-				if err = json.Unmarshal(value,row); err != nil {
-					return
-				}
+				// get row
+				row, _ := e.Get("ucode",string(prefix))
 
 				// set replacer
 				if count == 0 {
@@ -130,21 +153,15 @@ func (e *Emojer) Emojiless(emojiness string) (emojiless string, err error){
 			} else {
 
 				// start a new criteria
-				criteria = []string{fmt.Sprintf("%X",c)}
+				criteria = []string{fmt.Sprintf("%U",c)[2:]}
 
 				// set a new prefix
 				prefix = []byte(strings.Join(criteria," "))
 
 				// perform a new search
-				if key, value := cursor.Seek(prefix); key != nil && bytes.HasPrefix(key,prefix) {
+				if key, _ := cursor.Seek(prefix); key != nil && bytes.HasPrefix(key,prefix) {
 
-					// init emoji db row
-					row := &Row{}
-
-					// unmarshal value
-					if err = json.Unmarshal(value,row); err != nil {
-						return
-					}
+					row, _ := e.Get("ucode",string(prefix))
 
 					// save the first occurrence
 					replacers = append(replacers,Replacer{Index:i,Length:len(row.Emoji),Value:row.Alias})

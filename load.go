@@ -8,13 +8,29 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode"
 	"github.com/boltdb/bolt"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 const dataUrl = "http://unicode.org/Public/emoji/5.0/emoji-test.txt"
 
+func NoDiacritics(data string) string {
+
+	// set transformer interface
+	t := transform.Chain(norm.NFD,
+		transform.RemoveFunc(func(r rune) bool { return unicode.Is(unicode.Mn, r) }),
+		norm.NFC)
+
+	// normalize string (remove diacritics)
+	normalized, _, _ := transform.String(t, data)
+
+	return normalized
+}
+
 func CleanAlias(data, replacer string) string {
-	data = strings.Replace(data, "u.s.", "us", -1)
+	data = strings.NewReplacer("u.s.","us","*","asterisk","#","sharp").Replace(data)
 	reg, _ := regexp.Compile("[^A-Za-z0-9]+")
 	rep := reg.ReplaceAllString(data, replacer)
 	return rep
@@ -88,7 +104,7 @@ func Load(dbname string){
 			data := strings.Split(line,";")
 
 			// get unicode
-			row.Unicode = strings.TrimRight(data[0]," ")
+			row.Unicode = strings.TrimSuffix(strings.TrimRight(data[0]," ")," FE0F")
 
 			// get emoji details
 			detail := strings.Split(strings.Split(data[1],"# ")[1], " ")
@@ -97,10 +113,10 @@ func Load(dbname string){
 			row.Emoji = strings.TrimRight(detail[0],"️")
 
 			// get emoji name
-			row.Name = NoExtraSpaces(CleanAlias(strings.ToLower(strings.Join(detail[1:]," "))," "))
+			row.Name = NoExtraSpaces(CleanAlias(NoDiacritics(strings.ToLower(strings.Join(detail[1:]," ")))," "))
 
 			// create alias
-			row.Alias = strings.Replace(fmt.Sprintf(":%s:",row.Name), " ", "_", -1)
+			row.Alias = strings.Replace(fmt.Sprintf(":%s:",strings.TrimRight(row.Name," ")), " ", "_", -1)
 
 			// marshal row
 			value, _ := json.Marshal(row)
@@ -115,7 +131,7 @@ func Load(dbname string){
 				panic(err)
 			}
 
-			// fmt.Printf("key[%s] | emoji[%s] | name[%s] | alias[%s]\n", row.Unicode, row.Emoji, row.Name, row.Alias)
+			fmt.Printf("key[%s] | emoji[%s] | name[%s] | alias[%s]\n", row.Unicode, row.Emoji, row.Name, row.Alias)
 
 		}
 
